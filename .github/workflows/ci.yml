@@ -1,0 +1,49 @@
+name: Social Media Brief
+
+on:
+  # 每日北京时间凌晨3点自动运行
+  schedule:
+    - cron: '0 19 * * *'  # UTC时间19点 = 北京时间3点
+  
+  # main分支push时自动运行测试
+  push:
+    branches: [ main ]
+  
+  # 支持手动触发
+  workflow_dispatch:
+
+jobs:
+  run-brief:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 签出代码
+        uses: actions/checkout@v4
+        
+      - name: 设置Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+      - name: 运行测试
+        run: |
+          pytest tests/ -v
+          
+      - name: 执行主程序
+        env:
+          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
+        run: |
+          python main.py
+          
+      - name: 上传生成的简报
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-brief
+          path: data/*.md
+          retention-days: 30
