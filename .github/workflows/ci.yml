@@ -9,6 +9,11 @@ on:
   
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   run-brief:
     runs-on: ubuntu-latest
@@ -27,13 +32,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install python-dotenv requests
           
-      - name: 执行主程序
+      - name: 执行主程序 - 生成AI简报
         env:
           ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
         run: |
           python main.py
           
-      - name: 上传生成的简报
+      - name: 设置 GitHub Pages
+        uses: actions/configure-pages@v5
+        
+      - name: 上传网页到 Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+          
+      - name: 部署到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: 上传 Markdown 简报
         uses: actions/upload-artifact@v4
         with:
           name: daily-brief
