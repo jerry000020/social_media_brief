@@ -3,54 +3,58 @@ name: Social Media Brief
 on:
   schedule:
     - cron: '0 19 * * *'
-  
   push:
     branches: [ main ]
-  
   workflow_dispatch:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 jobs:
   run-brief:
     runs-on: ubuntu-latest
     
     steps:
-      - name: 签出代码
+      - name: Checkout code
         uses: actions/checkout@v4
         
-      - name: 设置Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           
-      - name: 安装依赖
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install python-dotenv requests
           
-      - name: 执行主程序 - 生成AI简报
+      - name: Generate AI brief
         env:
           ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
         run: |
           python main.py
           
-      - name: 设置 GitHub Pages
-        uses: actions/configure-pages@v5
-        
-      - name: 上传网页到 Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./site
+      - name: Deploy to gh-pages branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           
-      - name: 部署到 GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          git checkout --orphan gh-pages
+          git rm -rf .
+          cp -r site/* .
+          
+          if [ -f "index.html" ]; then
+            git add index.html
+            git commit -m "Deploy website"
+            git push -f origin gh-pages
+            echo "Deployed to gh-pages branch"
+          else
+            echo "ERROR: index.html not found!"
+            ls -la
+            exit 1
+          fi
 
-      - name: 上传 Markdown 简报
+      - name: Upload markdown report
         uses: actions/upload-artifact@v4
         with:
           name: daily-brief
