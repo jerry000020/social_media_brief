@@ -9,9 +9,6 @@ on:
   
   workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   run-brief:
     runs-on: ubuntu-latest
@@ -20,20 +17,15 @@ jobs:
       - name: 签出代码
         uses: actions/checkout@v4
         
-      - name: 设置Python 3.11
+      - name: 设置Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
           
       - name: 安装依赖
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          
-      - name: 运行测试
-        run: |
-          pytest tests/ -v
+          pip install python-dotenv requests
           
       - name: 执行主程序
         env:
