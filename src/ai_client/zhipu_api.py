@@ -1,17 +1,18 @@
 """
-智谱GLM-4-Flash API统一封装模块
-自动读取环境变量，提供get_content_brief()核心函数
+智谱AI客户端 - 使用requests直接调用API（最小依赖！
 """
 import os
 import logging
 from typing import Optional
-from dotenv import load_dotenv
-from zhipuai import ZhipuAI
+import requests
 
-# 配置日志
 logger = logging.getLogger(__name__)
 
-# 系统提示词（固定）
+# 固定配置
+API_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+MODEL_NAME = "glm-4-flash"
+
+# 系统提示词
 SYSTEM_PROMPT = """你是海外短视频&社媒行业分析师，对用户给到的海外INS/FB帖子原文：
 1、完整翻译成通顺中文；
 2、提炼爆款核心选题；
@@ -19,83 +20,65 @@ SYSTEM_PROMPT = """你是海外短视频&社媒行业分析师，对用户给到
 4、分析博主变现方式；
 内容精简凝练，分段排版便于生成MD文档。"""
 
-# 接口固定参数
-BASE_URL = "https://open.bigmodel.cn/api/paas/v4/"
-MODEL_NAME = "glm-4-flash"
-
 
 def load_api_key() -> str:
-    """
-    加载智谱API密钥
-    优先级：系统环境变量（GitHub Actions）> .env文件 > 异常
-    """
-    # 先尝试从环境变量加载
-    api_key = os.getenv("ZHIPU_API_KEY")
-    
+    """加载API密钥"""
+    api_key = os.getenv("ZHIPU_API_KEY", "")
     if not api_key:
-        # 尝试从.env文件加载
-        load_dotenv()
-        api_key = os.getenv("ZHIPU_API_KEY")
-    
-    if not api_key:
-        raise ValueError("未找到ZHIPU_API_KEY，请在系统环境变量或.env文件中配置")
-    
-    return api_key
+        raise ValueError("未找到 ZHIPU_API_KEY 环境变量")
+    return api_key.strip()
 
 
-def get_content_brief(raw_text: str) -> Optional[str]:
-    """
-    调用智谱GLM-4-Flash生成结构化简报
-    Args:
-        raw_text: 原始英文社媒文案
-    Returns:
-        AI生成的结构化简报字符串，失败返回None
-    """
+def call_zhipu_api(text: str) -> Optional[str]:
+    """调用智谱API"""
     try:
         api_key = load_api_key()
-        client = ZhipuAI(api_key=api_key)
         
-        logger.info(f"正在调用智谱API处理文本，长度: {len(raw_text)}")
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
         
-        response = client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[
+        payload = {
+            "model": MODEL_NAME,
+            "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": raw_text}
+                {"role": "user", "content": text}
             ],
-            temperature=0.7,
-            max_tokens=2000
-        )
+            "temperature": 0.7,
+            "max_tokens": 2000
+        }
         
-        result = response.choices[0].message.content
-        logger.info("智谱API调用成功")
+        logger.info("📤 调用智谱API...")
+        
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=60)
+        
+        if response.status_code != 200:
+            logger.error(f"❌ API错误 {response.status_code}: {response.text}")
+            return None
+        
+        data = response.json()
+        
+        result = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        
+        if not result:
+            logger.error("❌ API返回内容为空")
+            return None
+        
+        logger.info("✅ 智谱API调用成功")
         return result
         
+    except requests.exceptions.Timeout:
+        logger.error("❌ API调用超时")
+        return None
+    except requests.exceptions.RequestException as e:
+        logger.error(f"❌ 网络请求失败: {e}")
+        return None
     except Exception as e:
-        logger.error(f"智谱API调用失败: {str(e)}", exc_info=True)
+        logger.error(f"❌ 调用异常: {e}", exc_info=True)
         return None
 
 
-def test_api_connection() -> bool:
-    """
-    测试智谱API连通性
-    Returns:
-        连接成功返回True，失败返回False
-    """
-    try:
-        api_key = load_api_key()
-        client = ZhipuAI(api_key=api_key)
-        
-        response = client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[{"role": "user", "content": "你好"}]
-        )
-        
-        if response.choices[0].message.content:
-            logger.info("智谱API连通性测试成功")
-            return True
-        return False
-        
-    except Exception as e:
-        logger.error(f"智谱API连通性测试失败: {str(e)}", exc_info=True)
-        return False
+def get_content_brief(raw_text: str) -> Optional[str]:
+    """对外部暴露的主函数"""
+    return call_zhipu_api(raw_text)
