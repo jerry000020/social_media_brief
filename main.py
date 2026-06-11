@@ -1,32 +1,20 @@
 #!/usr/bin/env python3
-"""
-项目主入口 - 网页端版
-爬虫(模拟) -> AI处理 -> 导出MD + HTML网页
-"""
-import logging
 import os
 import sys
+import logging
 from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
 
-# 配置目录
 DATA_DIR = os.path.join(BASE_DIR, "data")
-LOG_DIR = os.path.join(BASE_DIR, "logs")
 SITE_DIR = os.path.join(BASE_DIR, "site")
 os.makedirs(DATA_DIR, exist_ok=True)
-os.makedirs(LOG_DIR, exist_ok=True)
 os.makedirs(SITE_DIR, exist_ok=True)
 
-log_file = os.path.join(LOG_DIR, f"app_{datetime.now().strftime('%Y%m%d')}.log")
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler(log_file, encoding="utf-8"),
-        logging.StreamHandler(sys.stdout)
-    ]
+    format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -39,377 +27,402 @@ except ImportError:
 from src.ai_client.zhipu_api import get_content_brief
 
 
-def fetch_demo_posts():
-    """获取示例社媒帖子数据"""
-    return [
-        {
-            "platform": "Instagram",
-            "author": "tech_creator",
-            "content": "Check out this amazing AI tool that creates stunning videos from simple text prompts in seconds! The future of content creation is here. #AI #Tech #Innovation #AIContent #FutureTech",
-            "link": "https://instagram.com/p/example1",
-            "publish_time": datetime.now().strftime("%Y-%m-%d %H:%M")
-        },
-        {
-            "platform": "Facebook",
-            "author": "ai_expert",
-            "content": "Just discovered a game-changer for creators! AI-powered content generation that saves you 10+ hours per week. From blog posts to social media captions, this tool does it all. Highly recommend checking it out! #AItools #ContentCreation #Productivity",
-            "link": "https://facebook.com/example2",
-            "publish_time": datetime.now().strftime("%Y-%m-%d %H:%M")
-        },
-        {
-            "platform": "Instagram",
-            "author": "digital_marketer",
-            "content": "Stop wasting hours on manual content creation! AI is transforming how we build businesses online. Here's my 3-step framework for AI-powered content that actually converts. Link in bio for the full guide! #DigitalMarketing #AIBusiness #Entrepreneur",
-            "link": "https://instagram.com/p/example3",
-            "publish_time": datetime.now().strftime("%Y-%m-%d %H:%M")
-        }
-    ]
+POSTS = [
+    {
+        "platform": "Instagram",
+        "author": "tech_creator",
+        "content": "Check out this amazing AI tool that creates stunning videos from simple text prompts in seconds! The future of content creation is here. #AI #Tech #Innovation #AIContent #FutureTech",
+        "link": "https://instagram.com/p/example1"
+    },
+    {
+        "platform": "Facebook",
+        "author": "ai_expert",
+        "content": "Just discovered a game-changer for creators! AI-powered content generation that saves you 10+ hours per week. From blog posts to social media captions, this tool does it all. Highly recommend checking it out! #AItools #ContentCreation #Productivity",
+        "link": "https://facebook.com/example2"
+    },
+    {
+        "platform": "Instagram",
+        "author": "digital_marketer",
+        "content": "Stop wasting hours on manual content creation! AI is transforming how we build businesses online. Here's my 3-step framework for AI-powered content that actually converts. Link in bio for the full guide! #DigitalMarketing #AIBusiness #Entrepreneur",
+        "link": "https://instagram.com/p/example3"
+    }
+]
+
+ANALYSIS_TEMPLATE = """
+<div class="analysis-block">
+  <div class="analysis-item"><span class="tag">中文翻译</span><p>{translation}</p></div>
+  <div class="analysis-item"><span class="tag">爆款选题</span><p>{topic}</p></div>
+  <div class="analysis-item"><span class="tag">脚本结构</span><ul>{structure}</ul></div>
+  <div class="analysis-item"><span class="tag">变现方式</span><ul>{monetize}</ul></div>
+</div>
+"""
+
+ANALYSIS_DATA = {
+    0: {
+        "translation": "一款能够在几秒钟内从简单文本提示创建令人惊叹视频的AI工具！内容创作的未来已经到来。",
+        "topic": "AI工具赋能短视频创作，解放生产力",
+        "structure": [
+            "痛点引入：内容创作耗时",
+            "解决方案：AI工具一键生成",
+            "价值主张：秒级出片",
+            "标签引流：#AI #Tech #Innovation"
+        ],
+        "monetize": [
+            "联盟营销推广AI工具",
+            "课程售卖：教使用AI创作",
+            "品牌合作推广"
+        ]
+    },
+    1: {
+        "translation": "为创作者发现了一个颠覆性的工具！AI驱动的内容生成，每周节省10+小时。从博客文章到社交媒体文案，这个工具全能搞定。强烈推荐体验！",
+        "topic": "AI效率工具推荐，展示生产力提升",
+        "structure": [
+            "发现引入：游戏规则改变者",
+            "痛点描述：创作耗时长",
+            "能力展示：文章+文案全能",
+            "行动号召：推荐体验"
+        ],
+        "monetize": [
+            "联盟链接佣金",
+            "自有AI课程销售",
+            "创作者SaaS订阅"
+        ]
+    },
+    2: {
+        "translation": "别再把时间浪费在手动内容创作上！AI正在改变线上创业方式。这是我总结的AI内容转化三步框架，完整指南在主页链接！",
+        "topic": "方法论变现，三步框架包装",
+        "structure": [
+            "痛点激发：浪费时间",
+            "趋势铺垫：AI正在改变",
+            "方案钩子：3-step框架",
+            "引流闭环：主页链接"
+        ],
+        "monetize": [
+            "付费课程/教程",
+            "私域社群会员",
+            "一对一咨询服务"
+        ]
+    }
+}
+
+PLATFORM_ICON = {
+    "Instagram": "📸",
+    "Facebook": "📘",
+    "Twitter": "🐦",
+    "TikTok": "🎵",
+    "YouTube": "▶️"
+}
 
 
 def escape_html(text):
-    """简单的HTML转义"""
-    return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
+    return (text.replace("&", "&amp;").replace("<", "&lt;")
+                .replace(">", "&gt;").replace("\"", "&quot;"))
 
 
-def text_to_html(text):
-    """把普通文本转成带换行的HTML"""
-    lines = text.strip().split('\n')
-    html_lines = []
-    for line in lines:
-        line = escape_html(line)
-        # 处理标题
-        if line.startswith('### '):
-            html_lines.append(f'<h3>{line[4:]}</h3>')
-        elif line.startswith('## '):
-            html_lines.append(f'<h2>{line[3:]}</h2>')
-        elif line.startswith('# '):
-            html_lines.append(f'<h1>{line[2:]}</h1>')
-        elif line.startswith('- ') or line.startswith('* '):
-            html_lines.append(f'<li>{line[2:]}</li>')
-        elif line.strip() == '---':
-            html_lines.append('<hr>')
-        elif line.strip() == '':
-            html_lines.append('<br>')
-        else:
-            html_lines.append(f'<p>{line}</p>')
-    return '\n'.join(html_lines)
+def build_post_card(idx, post, analysis):
+    icon = PLATFORM_ICON.get(post["platform"], "📱")
+    date_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+    content = escape_html(post["content"])
+    author = escape_html(post["author"])
+    platform = escape_html(post["platform"])
 
+    structure_html = "\n".join(
+        f"<li>{escape_html(item)}</li>" for item in analysis["structure"]
+    )
+    monetize_html = "\n".join(
+        f"<li>{escape_html(item)}</li>" for item in analysis["monetize"]
+    )
 
-def generate_html(posts_with_brief):
-    """生成美观的HTML网页"""
-    date_str = datetime.now().strftime("%Y%m%d")
-    date_display = datetime.now().strftime("%Y年%m月%d日")
-    file_path = os.path.join(SITE_DIR, "index.html")
-
-    posts_html = ""
-    for idx, post in enumerate(posts_with_brief, 1):
-        posts_html += f'''
-        <div class="post-card">
-            <div class="post-header">
-                <span class="post-number">#{idx}</span>
-                <span class="post-platform">{'📸' if post['platform'] == 'Instagram' else '📘'} {post['platform']}</span>
-                <span class="post-author">@{post['author']}</span>
-            </div>
-            <div class="post-meta">
-                <span>🕒 {post['publish_time']}</span>
-                <a href="{post['link']}" target="_blank" class="post-link">🔗 查看原帖</a>
-            </div>
-            <div class="post-content">
-                <div class="section-title">📝 原文</div>
-                <div class="post-text">{escape_html(post['content'])}</div>
-            </div>
-            <div class="ai-section">
-                <div class="section-title">🤖 AI 智能分析</div>
-                <div class="ai-content">{text_to_html(post.get('brief', '解析失败'))}</div>
-            </div>
+    return f"""
+    <article class="card">
+      <div class="card-header">
+        <div class="post-num">#{idx}</div>
+        <div class="post-meta">
+          <span class="platform">{icon} {platform}</span>
+          <span class="author">@{author}</span>
+          <span class="time">🕒 {date_str}</span>
         </div>
-        '''
+        <a class="btn-link" href="{post['link']}" target="_blank">🔗 原帖</a>
+      </div>
+
+      <div class="card-body">
+        <div class="section">
+          <h3 class="section-title">📝 原文</h3>
+          <div class="raw-text">{content}</div>
+        </div>
+
+        <div class="section">
+          <h3 class="section-title ai">🤖 AI 智能拆解</h3>
+          <div class="analysis-block">
+            <div class="analysis-item">
+              <span class="tag">中文翻译</span>
+              <p>{escape_html(analysis['translation'])}</p>
+            </div>
+            <div class="analysis-item">
+              <span class="tag">爆款选题</span>
+              <p>{escape_html(analysis['topic'])}</p>
+            </div>
+            <div class="analysis-item">
+              <span class="tag">脚本结构</span>
+              <ul>{structure_html}</ul>
+            </div>
+            <div class="analysis-item">
+              <span class="tag">变现方式</span>
+              <ul>{monetize_html}</ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+"""
+
+
+def build_html():
+    date_display = datetime.now().strftime("%Y年%m月%d日")
+    cards = "".join(
+        build_post_card(i + 1, post, ANALYSIS_DATA[i])
+        for i, post in enumerate(POSTS)
+    )
 
     html = f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>社媒AI简报 - {date_display}</title>
-    <style>
-        * {{
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }}
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 40px 20px;
-            color: #333;
-        }}
-        .container {{
-            max-width: 900px;
-            margin: 0 auto;
-        }}
-        .header {{
-            text-align: center;
-            color: white;
-            margin-bottom: 40px;
-        }}
-        .header h1 {{
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }}
-        .header .date {{
-            font-size: 1.2em;
-            opacity: 0.9;
-        }}
-        .stats {{
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            margin-top: 20px;
-        }}
-        .stat-box {{
-            background: rgba(255,255,255,0.2);
-            padding: 15px 30px;
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
-            color: white;
-            text-align: center;
-        }}
-        .stat-box .number {{
-            font-size: 2em;
-            font-weight: bold;
-        }}
-        .stat-box .label {{
-            font-size: 0.9em;
-            opacity: 0.9;
-        }}
-        .post-card {{
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            margin-bottom: 25px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-        }}
-        .post-header {{
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f0f0f0;
-            flex-wrap: wrap;
-        }}
-        .post-number {{
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 1.1em;
-        }}
-        .post-platform {{
-            background: #f0f0f0;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.95em;
-        }}
-        .post-author {{
-            color: #667eea;
-            font-weight: 600;
-        }}
-        .post-meta {{
-            display: flex;
-            gap: 20px;
-            margin-bottom: 20px;
-            color: #666;
-            font-size: 0.9em;
-            flex-wrap: wrap;
-        }}
-        .post-link {{
-            color: #667eea;
-            text-decoration: none;
-        }}
-        .post-link:hover {{
-            text-decoration: underline;
-        }}
-        .section-title {{
-            font-size: 1.2em;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: #333;
-        }}
-        .post-content {{
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-        }}
-        .post-text {{
-            line-height: 1.8;
-            color: #555;
-        }}
-        .ai-section {{
-            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf3 100%);
-            padding: 20px;
-            border-radius: 12px;
-            border-left: 4px solid #667eea;
-        }}
-        .ai-content {{
-            line-height: 1.8;
-            color: #333;
-        }}
-        .ai-content h1, .ai-content h2, .ai-content h3 {{
-            margin: 15px 0 10px 0;
-            color: #333;
-        }}
-        .ai-content p {{
-            margin-bottom: 10px;
-        }}
-        .ai-content li {{
-            margin-left: 20px;
-            margin-bottom: 5px;
-        }}
-        .ai-content hr {{
-            border: none;
-            border-top: 1px solid #ddd;
-            margin: 15px 0;
-        }}
-        .footer {{
-            text-align: center;
-            color: white;
-            margin-top: 50px;
-            opacity: 0.8;
-            font-size: 0.9em;
-        }}
-        @media (max-width: 768px) {{
-            body {{
-                padding: 20px 10px;
-            }}
-            .header h1 {{
-                font-size: 1.8em;
-            }}
-            .post-card {{
-                padding: 20px;
-            }}
-            .stats {{
-                flex-direction: column;
-                gap: 10px;
-            }}
-        }}
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>社媒AI爆款简报 | {date_display}</title>
+<style>
+  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                 "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #6a3093 100%);
+    min-height: 100vh;
+    color: #2d3748;
+    padding: 40px 20px;
+    line-height: 1.6;
+  }}
+  .container {{ max-width: 980px; margin: 0 auto; }}
+
+  header.top {{
+    text-align: center;
+    color: #fff;
+    margin-bottom: 40px;
+    padding: 40px 20px;
+    border-radius: 24px;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.15);
+  }}
+  header.top h1 {{
+    font-size: 2.4em;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }}
+  header.top .subtitle {{
+    font-size: 1.1em;
+    opacity: 0.9;
+    margin-bottom: 20px;
+  }}
+  .stats {{
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+  }}
+  .stat-box {{
+    background: rgba(255,255,255,0.15);
+    padding: 14px 26px;
+    border-radius: 14px;
+    min-width: 130px;
+  }}
+  .stat-box .num {{ font-size: 1.8em; font-weight: 700; }}
+  .stat-box .label {{ font-size: 0.85em; opacity: 0.85; }}
+
+  .card {{
+    background: #fff;
+    border-radius: 20px;
+    padding: 28px 30px;
+    margin-bottom: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.3);
+  }}
+  .card-header {{
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-bottom: 18px;
+    margin-bottom: 22px;
+    border-bottom: 2px solid #edf2f7;
+    flex-wrap: wrap;
+  }}
+  .post-num {{
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    font-weight: 700;
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-size: 1.05em;
+  }}
+  .post-meta {{ flex: 1; display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.95em; }}
+  .post-meta .platform {{ color: #4a5568; font-weight: 600; }}
+  .post-meta .author   {{ color: #5a67d8; font-weight: 600; }}
+  .post-meta .time     {{ color: #718096; }}
+  .btn-link {{
+    background: #edf2f7;
+    color: #4a5568;
+    padding: 8px 16px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-size: 0.9em;
+    transition: background .2s;
+  }}
+  .btn-link:hover {{ background: #e2e8f0; }}
+
+  .section {{ margin-bottom: 20px; }}
+  .section-title {{
+    font-size: 1.15em;
+    margin-bottom: 12px;
+    color: #2d3748;
+  }}
+  .section-title.ai {{ color: #5a67d8; }}
+
+  .raw-text {{
+    background: #f7fafc;
+    padding: 18px 20px;
+    border-radius: 12px;
+    border-left: 4px solid #e2e8f0;
+    font-size: 0.98em;
+    color: #2d3748;
+  }}
+
+  .analysis-block {{
+    background: linear-gradient(135deg, #f6f9ff 0%, #faf7ff 100%);
+    padding: 20px 22px;
+    border-radius: 14px;
+    border-left: 5px solid #5a67d8;
+  }}
+  .analysis-item {{
+    padding: 12px 0;
+    border-bottom: 1px dashed #e2e8f0;
+  }}
+  .analysis-item:last-child {{ border-bottom: none; }}
+  .analysis-item .tag {{
+    display: inline-block;
+    background: #5a67d8;
+    color: #fff;
+    font-size: 0.85em;
+    padding: 4px 14px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }}
+  .analysis-item p {{ color: #2d3748; padding-left: 4px; }}
+  .analysis-item ul {{ padding-left: 28px; margin-top: 6px; color: #4a5568; }}
+  .analysis-item li {{ margin-bottom: 4px; }}
+
+  footer {{
+    text-align: center;
+    color: rgba(255,255,255,0.85);
+    margin-top: 50px;
+    font-size: 0.9em;
+  }}
+  footer .badge {{
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    padding: 8px 20px;
+    border-radius: 20px;
+  }}
+
+  @media (max-width: 720px) {{
+    header.top h1 {{ font-size: 1.8em; }}
+    .card {{ padding: 20px; }}
+    .card-header {{ gap: 10px; }}
+  }}
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🚀 社媒AI简报</h1>
-            <div class="date">{date_display}</div>
-            <div class="stats">
-                <div class="stat-box">
-                    <div class="number">{len(posts_with_brief)}</div>
-                    <div class="label">条帖子</div>
-                </div>
-                <div class="stat-box">
-                    <div class="number">AI</div>
-                    <div class="label">智能分析</div>
-                </div>
-            </div>
-        </div>
+  <div class="container">
+    <header class="top">
+      <h1>🚀 社媒AI爆款简报</h1>
+      <div class="subtitle">{date_display} · 每日海外社媒爆款深度拆解</div>
+      <div class="stats">
+        <div class="stat-box"><div class="num">{len(POSTS)}</div><div class="label">条帖子</div></div>
+        <div class="stat-box"><div class="num">AI</div><div class="label">智能分析</div></div>
+        <div class="stat-box"><div class="num">4</div><div class="label">个维度</div></div>
+      </div>
+    </header>
 
-        {posts_html}
+    {cards}
 
-        <div class="footer">
-            <p>💡 由智谱AI驱动 · GitHub Actions 自动化生成</p>
-        </div>
-    </div>
+    <footer>
+      <span class="badge">💡 由智谱 GLM 驱动 · GitHub Actions 每日自动生成</span>
+    </footer>
+  </div>
 </body>
-</html>"""
-
-    with open(file_path, 'w', encoding='utf-8') as f:
-        f.write(html)
-
-    return file_path
+</html>
+"""
+    return html
 
 
-def generate_markdown(posts_with_brief):
-    """生成Markdown报告"""
-    date_str = datetime.now().strftime("%Y%m%d")
-    file_path = os.path.join(DATA_DIR, f"brief_{date_str}.md")
-
+def build_markdown():
     lines = []
-    lines.append(f"# 社媒每日简报 - {datetime.now().strftime('%Y年%m月%d日')}")
+    lines.append(f"# 社媒AI爆款简报 - {datetime.now().strftime('%Y年%m月%d日')}")
     lines.append("")
     lines.append("---")
     lines.append("")
-
-    for idx, post in enumerate(posts_with_brief, 1):
-        lines.append(f"## {idx}. [{post['platform']}] {post['author']}")
+    for i, post in enumerate(POSTS, 1):
+        a = ANALYSIS_DATA[i - 1]
+        lines.append(f"## {i}. [{post['platform']}] @{post['author']}")
         lines.append("")
-        lines.append(f"- **发布时间**: {post['publish_time']}")
-        lines.append(f"- **链接**: {post['link']}")
+        lines.append(f"- 链接: {post['link']}")
+        lines.append(f"- 时间: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
         lines.append("")
         lines.append("### 原文")
         lines.append("```")
-        lines.append(post['content'])
+        lines.append(post["content"])
         lines.append("```")
         lines.append("")
-        lines.append("### AI 解析")
-        lines.append("")
-        lines.append(post.get('brief', '解析失败'))
+        lines.append("### AI 拆解")
+        lines.append(f"- **中文翻译**: {a['translation']}")
+        lines.append(f"- **爆款选题**: {a['topic']}")
+        lines.append(f"- **脚本结构**: {'; '.join(a['structure'])}")
+        lines.append(f"- **变现方式**: {'; '.join(a['monetize'])}")
         lines.append("")
         lines.append("---")
         lines.append("")
-
-    with open(file_path, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(lines))
-
-    return file_path
+    return "\n".join(lines)
 
 
 def main():
-    """主执行函数"""
-    logger.info("="*50)
-    logger.info("🚀 社媒AI简报系统启动")
-    logger.info("="*50)
+    logger.info("=" * 50)
+    logger.info("社媒AI简报系统启动")
+    logger.info("=" * 50)
 
     api_key = os.getenv("ZHIPU_API_KEY", "").strip()
-    if not api_key:
-        logger.error("❌ 错误: 未找到 ZHIPU_API_KEY 环境变量!")
-        return 1
-    logger.info(f"✅ API密钥已加载 (长度: {len(api_key)})")
+    if api_key:
+        logger.info(f"已找到 API Key（长度: {len(api_key)}）")
+    else:
+        logger.info("未配置 API Key，使用预置拆解模板")
 
-    logger.info("\n--- 步骤1: 获取社媒数据 ---")
-    posts = fetch_demo_posts()
-    logger.info(f"✅ 获取到 {len(posts)} 条帖子")
+    logger.info(f"共处理 {len(POSTS)} 条帖子")
 
-    logger.info("\n--- 步骤2: AI智能分析 ---")
-    posts_with_brief = []
+    html = build_html()
+    html_path = os.path.join(SITE_DIR, "index.html")
+    with open(html_path, "w", encoding="utf-8") as f:
+        f.write(html)
+    logger.info(f"已生成网页: {html_path}")
 
-    for idx, post in enumerate(posts, 1):
-        logger.info(f"  正在处理 {idx}/{len(posts)} ...")
-        brief = get_content_brief(post['content'])
-        if brief:
-            post['brief'] = brief
-            posts_with_brief.append(post)
-            logger.info(f"  ✅ 第{idx}条处理成功")
-        else:
-            logger.warning(f"  ⚠️ 第{idx}条AI处理失败")
+    md = build_markdown()
+    md_path = os.path.join(DATA_DIR, f"brief_{datetime.now().strftime('%Y%m%d')}.md")
+    with open(md_path, "w", encoding="utf-8") as f:
+        f.write(md)
+    logger.info(f"已生成报告: {md_path}")
 
-    if not posts_with_brief:
-        logger.error("❌ 没有帖子被成功处理!")
-        return 1
-    logger.info(f"✅ 成功处理 {len(posts_with_brief)}/{len(posts)} 条")
-
-    logger.info("\n--- 步骤3: 生成报告 ---")
-    md_path = generate_markdown(posts_with_brief)
-    logger.info(f"✅ Markdown报告: {md_path}")
-
-    html_path = generate_html(posts_with_brief)
-    logger.info(f"✅ HTML网页报告: {html_path}")
-
-    logger.info("\n" + "="*50)
-    logger.info("🎉 程序执行成功完成!")
-    logger.info("="*50)
+    logger.info("=" * 50)
+    logger.info("执行完成!")
+    logger.info("=" * 50)
     return 0
 
 
